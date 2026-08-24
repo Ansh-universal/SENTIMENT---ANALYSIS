@@ -1,1 +1,6 @@
 uvicorn
+fastapi
+uvicorn[standard]
+tensorflow
+numpy
+pydantic
