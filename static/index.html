@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Emotion Detection</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #14161c;
+    --panel: #1c1f28;
+    --panel-border: #2a2e3a;
+    --text: #eceef2;
+    --text-dim: #8b90a0;
+    --accent: #6c8cff;
+
+    --sadness: #5b8def;
+    --joy: #f5b942;
+    --love: #f06595;
+    --anger: #e5544d;
+    --fear: #9c6ade;
+    --surprise: #3ecf8e;
+  }
+
+  *{ box-sizing: border-box; }
+
+  body{
+    margin:0;
+    min-height:100vh;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding: 32px 16px;
+  }
+
+  .wrap{
+    width:100%;
+    max-width: 560px;
+  }
+
+  header{
+    margin-bottom: 24px;
+    text-align:center;
+  }
+
+  header .eyebrow{
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+  }
+
+  header h1{
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 28px;
+    font-weight: 700;
+    margin: 0 0 6px 0;
+  }
+
+  header p{
+    color: var(--text-dim);
+    font-size: 14px;
+    margin: 0;
+  }
+
+  .card{
+    background: var(--panel);
+    border: 1px solid var(--panel-border);
+    border-radius: 14px;
+    padding: 24px;
+  }
+
+  textarea{
+    width:100%;
+    min-height: 96px;
+    resize: vertical;
+    background: #12141a;
+    border: 1px solid var(--panel-border);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    padding: 14px;
+    outline: none;
+    transition: border-color .15s ease;
+  }
+
+  textarea:focus{
+    border-color: var(--accent);
+  }
+
+  .row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-top: 12px;
+    gap: 12px;
+  }
+
+  .count{
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+
+  button{
+    background: var(--accent);
+    color: #0d0e12;
+    border: none;
+    border-radius: 8px;
+    padding: 11px 22px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: opacity .15s ease, transform .1s ease;
+  }
+
+  button:hover{ opacity: 0.88; }
+  button:active{ transform: scale(0.98); }
+
+  button:disabled{
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .status{
+    text-align:center;
+    font-size: 13px;
+    color: var(--text-dim);
+    margin-top: 14px;
+    min-height: 18px;
+  }
+
+  .status.error{ color: var(--anger); }
+
+  /* Result */
+  .result{
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--panel-border);
+    display:none;
+  }
+
+  .result.show{ display:block; }
+
+  .headline{
+    display:flex;
+    align-items:center;
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+
+  .emoji{
+    font-size: 40px;
+    line-height:1;
+  }
+
+  .headline-text .label{
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 3px;
+  }
+
+  .headline-text .emotion-name{
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    text-transform: capitalize;
+  }
+
+  .headline-text .confidence{
+    font-size: 13px;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+
+  .bars{
+    display:flex;
+    flex-direction:column;
+    gap: 10px;
+  }
+
+  .bar-row{
+    display:grid;
+    grid-template-columns: 74px 1fr 44px;
+    align-items:center;
+    gap: 10px;
+    font-size: 13px;
+  }
+
+  .bar-row .name{
+    text-transform: capitalize;
+    color: var(--text-dim);
+  }
+
+  .bar-row.top .name{
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  .bar-track{
+    background: #12141a;
+    border-radius: 6px;
+    height: 8px;
+    overflow:hidden;
+  }
+
+  .bar-fill{
+    height:100%;
+    width:0%;
+    border-radius: 6px;
+    transition: width .5s ease;
+  }
+
+  .bar-row .pct{
+    text-align:right;
+    color: var(--text-dim);
+    font-variant-numeric: tabular-nums;
+  }
+
+  footer{
+    text-align:center;
+    margin-top: 18px;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">BiGRU · Text Classification</div>
+    <h1>Emotion Detection</h1>
+    <p>Type a sentence and the model will classify the emotion behind it.</p>
+  </header>
+
+  <div class="card">
+    <textarea id="text-input" placeholder="e.g. I can't believe how well today went" maxlength="2000"></textarea>
+    <div class="row">
+      <span class="count" id="char-count">0 / 2000</span>
+      <button id="predict-btn">Analyze</button>
+    </div>
+    <div class="status" id="status"></div>
+
+    <div class="result" id="result">
+      <div class="headline">
+        <div class="emoji" id="result-emoji">🙂</div>
+        <div class="headline-text">
+          <div class="label">Predicted emotion</div>
+          <div class="emotion-name" id="result-name">—</div>
+          <div class="confidence" id="result-confidence"></div>
+        </div>
+      </div>
+
+      <div class="bars" id="bars"></div>
+    </div>
+  </div>
+
+  <footer>Served from the /predict endpoint of the Emotion Detection API</footer>
+</div>
+
+<script>
+  const EMOJIS = {
+    sadness: "😔",
+    joy: "🤩",
+    love: "😍",
+    anger: "😡",
+    fear: "😨",
+    surprise: "😦"
+  };
+
+  const COLORS = {
+    sadness: "#5b8def",
+    joy: "#f5b942",
+    love: "#f06595",
+    anger: "#e5544d",
+    fear: "#9c6ade",
+    surprise: "#3ecf8e"
+  };
+
+  const textInput = document.getElementById('text-input');
+  const charCount = document.getElementById('char-count');
+  const predictBtn = document.getElementById('predict-btn');
+  const statusEl = document.getElementById('status');
+  const resultEl = document.getElementById('result');
+  const emojiEl = document.getElementById('result-emoji');
+  const nameEl = document.getElementById('result-name');
+  const confidenceEl = document.getElementById('result-confidence');
+  const barsEl = document.getElementById('bars');
+
+  textInput.addEventListener('input', () => {
+    charCount.textContent = `${textInput.value.length} / 2000`;
+  });
+
+  textInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+      runPrediction();
+    }
+  });
+
+  predictBtn.addEventListener('click', runPrediction);
+
+  async function runPrediction(){
+    const text = textInput.value.trim();
+
+    if (!text){
+      showStatus('Please enter some text first.', true);
+      return;
+    }
+
+    setLoading(true);
+    showStatus('Analyzing…', false);
+    resultEl.classList.remove('show');
+
+    try {
+      const response = await fetch('/predict', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text })
+      });
+
+      if (!response.ok){
+        const errBody = await response.json().catch(() => ({}));
+        throw new Error(errBody.detail || `Request failed (${response.status})`);
+      }
+
+      const data = await response.json();
+      renderResult(data);
+      showStatus('', false);
+
+    } catch (err) {
+      showStatus(err.message || 'Something went wrong. Is the API running?', true);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function renderResult(data){
+    const emotion = data.predicted_emotion;
+
+    emojiEl.textContent = EMOJIS[emotion] || '🙂';
+    nameEl.textContent = emotion;
+    nameEl.style.color = COLORS[emotion] || 'var(--text)';
+    confidenceEl.textContent = `${(data.confidence * 100).toFixed(1)}% confidence`;
+
+    const sorted = Object.entries(data.all_probabilities)
+      .sort((a, b) => b[1] - a[1]);
+
+    barsEl.innerHTML = '';
+
+    sorted.forEach(([label, prob]) => {
+      const pct = (prob * 100).toFixed(1);
+      const isTop = label === emotion;
+
+      const row = document.createElement('div');
+      row.className = 'bar-row' + (isTop ? ' top' : '');
+
+      row.innerHTML = `
+        <div class="name">${label}</div>
+        <div class="bar-track">
+          <div class="bar-fill" style="background:${COLORS[label]}"></div>
+        </div>
+        <div class="pct">${pct}%</div>
+      `;
+
+      barsEl.appendChild(row);
+
+      requestAnimationFrame(() => {
+        row.querySelector('.bar-fill').style.width = `${pct}%`;
+      });
+    });
+
+    resultEl.classList.add('show');
+  }
+
+  function setLoading(isLoading){
+    predictBtn.disabled = isLoading;
+    predictBtn.textContent = isLoading ? 'Analyzing…' : 'Analyze';
+  }
+
+  function showStatus(msg, isError){
+    statusEl.textContent = msg;
+    statusEl.classList.toggle('error', !!isError);
+  }
+</script>
+
+</body>
+</html>
